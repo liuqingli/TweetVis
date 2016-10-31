@@ -26,7 +26,6 @@
         $data[] = $row;
     }
     echo json_encode($data,JSON_UNESCAPED_UNICODE);  
-    echo json_last_error_msg();
     /* free result set */
     mysqli_free_result($result);
 
