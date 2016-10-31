@@ -14,6 +14,7 @@
         $db,
         $port
     );
+    mysqli_set_charset($link,"utf8");
 
     $query = "SELECT text FROM tweet_vis";
 
@@ -24,8 +25,8 @@
     {
         $data[] = $row;
     }
-    echo json_encode($data);  
-
+    echo json_encode($data,JSON_UNESCAPED_UNICODE);  
+    echo json_last_error_msg();
     /* free result set */
     mysqli_free_result($result);
 
