@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<!-- CSS Style Type -->
+<style type="text/css">
+#MainContainer {
+	width: 100%;
+	margin: 0 auto;
+	background: #EEE;
+	position: relative;
+}
+
+#LeftContainer {
+	width: 53%;
+	margin-top: 0 auto;
+	background: #EEE;
+	float: left;
+	position: relative;
+}
+
+#GeoGraph {
+	margin: 1px;
+	background: #FFF;
+}
+
+#TweetCountBar {
+	width: 15px;
+	margin-left: 95%;
+	margin-top: 40%;
+	position: absolute;
+}
+
+#TimeChart {
+	margin: 1px;
+	background: #FFF;
+}
+
+#RightContainer {
+	width: 46.5%;
+	margin-left: 5px;
+	background: #EEE;
+	float: left;
+	position: relative;
+}
+
+#WordCloud {
+	margin: 1px;
+	padding-top:10px;
+	background: #FFF;
+}
+
+#WordCountBar {
+	margin: 1px;
+	padding-top: 10px;
+	background: #FFF;
+}
+
+.states {
+	fill: teal;
+	fill-opacity: 0.7;
+	stroke: #FFF;
+	stroke-width: 1px;
+}
+
+path:hover {
+	fill-opacity: 0.9;
+	transition: all 0.5s;
+}
+
+div.tooltip {   
+	position: absolute;           
+	text-align: center;           
+	width: 60px;                  
+	height: 28px;                 
+	padding: 2px;             
+	font: 12px sans-serif;        
+	background: white;   
+	border: 0px;      
+	border-radius: 8px;           
+	pointer-events: none;         
+}
+
+.area {
+	fill: teal;
+	clip-path: url(#clip);
+}
+
+.zoom {
+	cursor: move;
+	fill: none;
+	pointer-events: all;
+}
+
+/* WordCountBar CSS */
+.bar {
+  fill: teal;
+}
+
+.bar:hover {
+  fill: orange;
+}
+
+.axis--y path {
+  display: none;
+}
+</style>
+
+<!-- Main Body -->
+<body>
+
+	<!-- Import JavaScript Library -->
+	<script src="//d3js.org/d3.v3.js"></script>
+	<script src="//d3js.org/d3.v4.js"></script>
+	<script src="//d3js.org/topojson.v1.min.js"></script>
+	<script src="d3.layout.cloud.js"></script>
+	
+	<!-- Global Layout-->
+	<div id="MainContainer">
+		<!-- LeftContainer includes GeoGraph and TimeChart-->
+		<div id="LeftContainer">	
+			<div id="GeoGraph">
+				<div id="TweetCountBar"></div>
+			</div>
+			<div id="TimeChart"></div>
+		</div>
+		<div id="RightContainer">
+			<div id="WordCloud"></div>
+			<div id="WordCountBar"></div>
+		</div>
+	</div>
+	
+	<script>
+	
+	/////////////////////////////////////////////////////////////////////////// 
+	//                         GeoGraph Visualization                        //
+	///////////////////////////////////////////////////////////////////////////
+	var geo_width = 750, geo_height = 450;
+
+	var projection = d3.geo.albersUsa()
+	.scale(900)
+	.translate([geo_width / 2, geo_height / 2]);
+
+	var path = d3.geo.path()
+	.projection(projection);
+
+	var geograph = d3.select("#GeoGraph").append("svg")
+	.attr("width", geo_width)
+	.attr("height", geo_height);
+
+	// Create the color set
+	var color = d3.scale.linear()
+	.range(['teal','rgb(69,60,100)','rgb(84,36,55)','rgb(157,31,37)']);
+
+	// Load statetweets data
+	d3.csv('statestweets.csv', function(data) {
+		// Set the range of the input data
+		color.domain([0,1,2,3]); 
+
+		// Load GeoJSON data
+		d3.json('us.json', function (error, us) {
+
+			for (var i = 0; i < data.length; i++) {
+				// Get state name from statetweets data 
+				var dataStateName = data[i].state;
+				// Get tweet number from each state  
+				var dataTweetCount = data[i].count;
+
+				// Find the corresponding state inside the GeoJSON
+				for (var j = 0; j < topojson.feature(us, us.objects.usStates).features.length; j++)  {
+					var jsonStateName = topojson.feature(us, us.objects.usStates).features[j].properties.STATE_ABBR;
+					if (dataStateName == jsonStateName) {
+						// Copy the data value into the JSON
+						topojson.feature(us, us.objects.usStates).features[j].properties.count = dataTweetCount; 
+						break;
+					}
+				}
+			}
+	
+			// Draw with different colors
+			geograph.selectAll('.states')
+			.data(topojson.feature(us, us.objects.usStates).features)
+			.enter()
+			.append('path')
+			.attr('class', 'states')
+			.attr('d', path)
+			.style('fill', function(d) {
+				var count = d.properties.count;
+				if (count) {
+					return color(count);
+				} else {
+					return "teal";
+				}
+			});
+		});
+
+	});
+
+	/////////////////////////////////////////////////////////////////////////// 
+	//                       TweetCountBar Visualization                     //
+	///////////////////////////////////////////////////////////////////////////
+	var tweetcountbar_width = 15, tweetcountbar_height = 150;
+
+	var tweetcountbar = d3.select("#TweetCountBar").append("svg")
+	.attr("width", tweetcountbar_width)
+	.attr("height", tweetcountbar_height);
+
+	//Append a defs (for definition) element to your SVG
+	var tweetcountbar_defs = tweetcountbar.append("defs");
+
+	//Append a linearGradient element to the defs and give it a unique id
+	var linearGradient = tweetcountbar_defs.append("linearGradient")
+	.attr("id", "linear-gradient")
+	.attr("x1", "0%")
+	.attr("y1", "0%")
+	.attr("x2", "0%")
+	.attr("y2", "100%");
+
+	linearGradient.append("stop") 
+	.attr("offset", "0%")   
+	.attr("stop-color", 'rgb(217,91,67)'); //light blue
+
+	linearGradient.append("stop") 
+	.attr("offset", "100%")   
+	.attr("stop-color", "teal"); //dark blue
+
+	tweetcountbar.append("rect")
+	.attr("width", tweetcountbar_width)
+	.attr("height", tweetcountbar_height)
+	.style("fill", "url(#linear-gradient)");
+
+
+	/////////////////////////////////////////////////////////////////////////// 
+	//                         TimeChart Visualization                       //
+	///////////////////////////////////////////////////////////////////////////
+	var time_width = 720, time_height = 130;
+
+	var timechart = d3.select("#TimeChart").append("svg")
+	.attr("width", time_width)
+	.attr("height", time_height);
+
+	var margin = {top: 10, right: 25, bottom: 60, left: 35},
+	margin2 = {top: 90, right: 25, bottom: 20, left: 35},
+	time_width = +timechart.attr("width") - margin.left - margin.right,
+	time_height = +timechart.attr("height") - margin.top - margin.bottom,
+	time_height2 = +timechart.attr("height") - margin2.top - margin2.bottom;
+
+	// Set up a date parsing function
+	var parseDate = d3.time.format("%Y-%m-%d %H:%M:%S").parse;
+
+	var x = d3.scaleTime().range([0, time_width]),
+	x2 = d3.scaleTime().range([0, time_width]),
+	y = d3.scaleLinear().range([time_height, 0]),
+	y2 = d3.scaleLinear().range([time_height2, 0]);
+
+	var xAxis = d3.axisBottom(x),
+	xAxis2 = d3.axisBottom(x2),
+	yAxis = d3.axisLeft(y).ticks(4);
+
+	var brush = d3.brushX()
+	.extent([[0, 0], [time_width, time_height2]])
+	.on("brush end", brushed);
+
+	var zoom = d3.zoom()
+	.scaleExtent([1, 50])
+	.translateExtent([[0, 0], [time_width, time_height]])
+	.extent([[0, 0], [time_width, time_height]])
+	.on("zoom", zoomed);
+
+	var area = d3.area()
+	.curve(d3.curveMonotoneX)
+	.x(function (d) {
+		return x(d.date);
+	})
+	.y0(time_height)
+	.y1(function (d) {
+		return y(d.count);
+	});
+
+	var area2 = d3.area()
+	.curve(d3.curveMonotoneX)
+	.x(function (d) {
+		return x2(d.date);
+	})
+	.y0(time_height2)
+	.y1(function (d) {
+		return y2(d.count);
+	});
+
+	timechart.append("defs").append("clipPath")
+	.attr("id", "clip")
+	.append("rect")
+	.attr("width", time_width)
+	.attr("height", time_height);
+
+	var focus = timechart.append("g")
+	.attr("class", "focus")
+	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	var context = timechart.append("g")
+	.attr("class", "context")
+	.attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
+
+	d3.json("db_gettime.php", function (error, data) {
+		data.forEach(function (d) {
+			d.date = parseDate(d.date);
+			d.count = +d.count;
+		});
+
+		x.domain(d3.extent(data, function (d) {
+			return d.date;
+		}));
+		y.domain(d3.extent(data, function (d) {
+			return d.count;
+		}));
+		x2.domain(x.domain());
+		y2.domain(y.domain());
+
+		focus.append("path")
+		.datum(data)
+		.attr("class", "area")
+		.attr("d", area);
+
+		focus.append("g")
+		.attr("class", "axis axis--x")
+		.attr("transform", "translate(0," + time_height + ")")
+		.call(xAxis);
+
+		focus.append("g")
+		.attr("class", "axis axis--y")
+		.call(yAxis);
+
+		context.append("path")
+		.datum(data)
+		.attr("class", "area")
+		.attr("d", area2);
+
+		context.append("g")
+		.attr("class", "axis axis--x")
+		.attr("transform", "translate(0," + time_height2 + ")")
+		.call(xAxis2);
+
+		context.append("g")
+		.attr("class", "brush")
+		.call(brush)
+		.call(brush.move, x.range());
+
+		timechart.append("rect")
+		.attr("class", "zoom")
+		.attr("width", time_width)
+		.attr("height", time_height)
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+		.call(zoom);
+	});
+
+	function brushed() {
+		if (d3.event.sourceEvent && d3.event.sourceEvent.type === "zoom") return;
+		var s = d3.event.selection || x2.range();
+		x.domain(s.map(x2.invert, x2));
+		focus.select(".area").attr("d", area);
+		focus.select(".axis--x").call(xAxis);
+		timechart.select(".zoom").call(zoom.transform, d3.zoomIdentity
+			.scale(time_width / (s[1] - s[0]))
+			.translate(-s[0], 0));
+		update_map();//TODO add parameter
+	}
+
+	function zoomed() {
+		if (d3.event.sourceEvent && d3.event.sourceEvent.type === "brush") return;
+		var t = d3.event.transform;
+		x.domain(t.rescaleX(x2).domain());
+		focus.select(".area").attr("d", area);
+		focus.select(".axis--x").call(xAxis);
+		context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
+		update_map();//TODO add parameter
+	}
+	
+	//TODO add parameter and optimization
+	function update_map() {
+		geograph.selectAll("path").remove();
+
+		d3.csv('statestweets.php', function(data) {
+		// Set the range of the input data
+		color.domain([0,1,2,3]); 
+
+		// Load GeoJSON data
+		d3.json('us.json', function (error, us) {
+			for (var i = 0; i < data.length; i++) {
+				// Get state name from statetweets data 
+				var dataStateName = data[i].state;
+				// Get tweet number from each state  
+				var dataTweetCount = data[i].count;
+
+				// Find the corresponding state inside the GeoJSON
+				for (var j = 0; j < topojson.feature(us, us.objects.usStates).features.length; j++)  {
+					var jsonStateName = topojson.feature(us, us.objects.usStates).features[j].properties.STATE_ABBR;
+					if (dataStateName == jsonStateName) {
+						// Copy the data value into the JSON
+						topojson.feature(us, us.objects.usStates).features[j].properties.count = dataTweetCount; 
+						break;
+					}
+				}
+			}
+	
+			// Draw with different colors
+			geograph.selectAll('.states')
+			.data(topojson.feature(us, us.objects.usStates).features)
+			.enter()
+			.append('path')
+			.attr('class', 'states')
+			.attr('d', path)
+			.style('fill', function(d) {
+				var count = d.properties.count;
+				if (count) {
+					return color(count);
+				} else {
+					return "teal";
+				}
+			});
+		});
+
+		});
+	}
+
+	/////////////////////////////////////////////////////////////////////////// 
+	//                         WordCloud Visualization                       //
+	///////////////////////////////////////////////////////////////////////////
+	d3.json("db_gettext.php", function (error, data) {
+		var tweetString = "";
+		data.forEach(function (d) {
+			tweetString += d.text.replace(/[!\.,:;\?]/g, '') + " ";
+		});
+		
+		var wordArray = tweetString.split(" ");
+		var wordObjects = [];
+		
+		function isNumeric(n) {
+		  return !isNaN(parseFloat(n)) && isFinite(n);
+		}
+		
+		var re = /^#\S+$/;
+		wordArray.forEach(function(d) {
+		    if (d.match(re)) {
+				if(!isNumeric(d.replace("#",""))) {
+					var wordObject = {}
+					wordObject.word = d.replace("#", "");
+					wordObjects.push(wordObject);
+				}
+			}
+		});
+		
+		console.log(wordObjects);
+		
+		var wordCount = d3.nest()
+		.key(function(d) { return d.word; })
+	    .rollup(function(v) { return v.length; })
+	    .entries(wordObjects);
+		
+		wordCount.sort(function(a, b) {
+			return b.value - a.value;
+		});
+		
+		wordCount = wordCount.slice(0,50)
+		
+		console.log(wordCount)
+				
+		var fill = d3.scale.category20();
+		
+		var wordcloud_width = 630, wordcloud_height = 150;
+		
+		var wordcloud = d3.select("#WordCloud").append("svg")
+		.attr("width", wordcloud_width)
+		.attr("height", wordcloud_height)
+		.append("g")
+		.attr("transform", "translate(" + (wordcloud_width / 2) + "," + (wordcloud_height / 2) + ")")
+		
+		var fontScale = d3.scale.linear().range([10, 60]);
+		fontScale.domain([
+			d3.min(wordCount, function(d) {
+				return d.value
+			}),
+			d3.max(wordCount, function(d) {
+				return d.value
+			}),
+		]);
+		
+		d3.layout.cloud().size([wordcloud_width, wordcloud_height])
+		.words(wordCount)
+		.rotate(0)
+		.text(function(d) {
+			return d.key;
+		})        
+		.font("Impact")
+		.fontSize(function(d) {
+			return fontScale(d.value)
+		})
+		.on("end", draw)
+		.start();
+		
+		function draw(words) {
+			var selectVis = wordcloud.selectAll("text")
+			.data(words);
+			
+			selectVis
+			.enter().append("text")
+			.style("font-size", function(d) {
+				return fontScale(d.value)
+			})
+			.style("font-family", "Impact")
+			.style("fill", function(d, i) {
+				return fill(i);
+			})
+			.attr("text-anchor", "middle")
+			.attr("transform", function(d) {
+				return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+			})
+			.text(function(d) {
+				return d.key;
+			})
+			
+			selectVis
+			.transition()
+			.duration(600)
+			.style("font-size", function(d) {
+				return fontScale(d.value)
+			})
+			.attr("transform", function(d) {
+				return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+			})
+			.style("fill-opacity", 1);
+		}
+		
+		wordCount = wordCount.slice(0,11)
+		
+		var wordcountbar_width = 640, wordcountbar_height = 180;
+		
+		var wordcountbar = d3.select("#WordCountBar").append("svg")
+		.attr("width", wordcountbar_width)
+		.attr("height", wordcountbar_height)
+				
+		var x = d3.scaleLinear().rangeRound([0, wordcountbar_width - 100]),
+		y = d3.scaleBand().rangeRound([20, wordcountbar_height + 10]).padding(0.4);
+		
+		function cutword(word) {
+			if(word.length <= 10)
+				return word;
+			else
+				return word.substring(0,7) + "...";
+		}
+		x.domain([0, d3.max(wordCount, function(d) { return d.value; })]);
+		y.domain(wordCount.map(function(d) { return cutword(d.key); }));
+		
+		var g = wordcountbar.append("g")
+	    .attr("transform", "translate(" + 70 + "," + -25 + ")");
+		
+		g.append("g")
+		.attr("class", "axis axis--y")
+		.call(d3.axisLeft(y).ticks(10))
+		.append("text")
+		.attr("transform", "rotate(90)")
+			
+		g.append("g")
+		.attr("class", "axis axis--x")
+		.attr("transform", "translate(0," + (wordcountbar_height + 6) + ")")
+		.call(d3.axisBottom(x))
+		.attr("font-size", "10px");
+		
+		g.selectAll(".bar")
+		.data(wordCount)
+		.enter().append("rect")
+		.attr("class", "bar")
+		.attr("x", function(d) { return 0; })
+		.attr("y", function(d) { return y(cutword(d.key)); })
+		.attr("width", function(d) { return x(d.value); })
+		.attr("height", y.bandwidth());	
+	});
+	</script>
+</body>
