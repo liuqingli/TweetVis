@@ -51,7 +51,6 @@
 
 #WordCountBar {
 	margin: 1px;
-	padding-top: 10px;
 	background: #FFF;
 }
 
@@ -100,9 +99,30 @@ div.tooltip {
   fill: orange;
 }
 
-.axis--y path {
-  display: none;
+.wordcountbar_axis_x text{
+  fill: teal;
 }
+
+.wordcountbar_axis_x line{
+  stroke: teal;
+}
+
+.wordcountbar_axis_x path{
+  stroke: teal;
+}  
+
+.wordcountbar_axis_y text{
+  fill: teal;
+}
+
+.wordcountbar_axis_y line{
+  stroke: teal;
+} 
+
+.wordcountbar_axis_y path{
+  stroke: teal;
+}  
+
 </style>
 
 <!-- Main Body -->
@@ -138,7 +158,7 @@ div.tooltip {
 
 	var projection = d3.geo.albersUsa()
 	.scale(900)
-	.translate([geo_width / 2, geo_height / 2]);
+	.translate([geo_width / 2 - 20, geo_height / 2]);
 
 	var path = d3.geo.path()
 	.projection(projection);
@@ -361,7 +381,7 @@ div.tooltip {
 		timechart.select(".zoom").call(zoom.transform, d3.zoomIdentity
 			.scale(time_width / (s[1] - s[0]))
 			.translate(-s[0], 0));
-		update_map();//TODO add parameter
+		update_map();
 	}
 
 	function zoomed() {
@@ -371,17 +391,15 @@ div.tooltip {
 		focus.select(".area").attr("d", area);
 		focus.select(".axis--x").call(xAxis);
 		context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
-		update_map();//TODO add parameter
+		update_map();
 	}
 	
 	//TODO add parameter and optimization
 	function update_map() {
 		geograph.selectAll("path").remove();
-
 		d3.csv('statestweets.php', function(data) {
 		// Set the range of the input data
 		color.domain([0,1,2,3]); 
-
 		// Load GeoJSON data
 		d3.json('us.json', function (error, us) {
 			for (var i = 0; i < data.length; i++) {
@@ -389,7 +407,6 @@ div.tooltip {
 				var dataStateName = data[i].state;
 				// Get tweet number from each state  
 				var dataTweetCount = data[i].count;
-
 				// Find the corresponding state inside the GeoJSON
 				for (var j = 0; j < topojson.feature(us, us.objects.usStates).features.length; j++)  {
 					var jsonStateName = topojson.feature(us, us.objects.usStates).features[j].properties.STATE_ABBR;
@@ -417,17 +434,17 @@ div.tooltip {
 				}
 			});
 		});
-
 		});
 	}
 
+	
 	/////////////////////////////////////////////////////////////////////////// 
 	//                         WordCloud Visualization                       //
 	///////////////////////////////////////////////////////////////////////////
 	d3.json("db_gettext.php", function (error, data) {
 		var tweetString = "";
 		data.forEach(function (d) {
-			tweetString += d.text.replace(/[!\.,:;\?]/g, '') + " ";
+			tweetString += d.text.replace(/[!\.,:;\?]/g, '').toLowerCase() + " ";
 		});
 		
 		var wordArray = tweetString.split(" ");
@@ -437,7 +454,7 @@ div.tooltip {
 		  return !isNaN(parseFloat(n)) && isFinite(n);
 		}
 		
-		var re = /^#\S+$/;
+		var re = /^#\w+$/;
 		wordArray.forEach(function(d) {
 		    if (d.match(re)) {
 				if(!isNumeric(d.replace("#",""))) {
@@ -529,49 +546,187 @@ div.tooltip {
 			.style("fill-opacity", 1);
 		}
 		
-		wordCount = wordCount.slice(0,11)
+		/////////////////////////////////////////////////////////////////////////// 
+		//                      WordCountBar Visualization                       //
+		///////////////////////////////////////////////////////////////////////////
 		
-		var wordcountbar_width = 640, wordcountbar_height = 180;
+		wordCount = wordCount.slice(0,10)
 		
-		var wordcountbar = d3.select("#WordCountBar").append("svg")
-		.attr("width", wordcountbar_width)
-		.attr("height", wordcountbar_height)
-				
-		var x = d3.scaleLinear().rangeRound([0, wordcountbar_width - 100]),
-		y = d3.scaleBand().rangeRound([20, wordcountbar_height + 10]).padding(0.4);
-		
-		function cutword(word) {
-			if(word.length <= 10)
-				return word;
-			else
-				return word.substring(0,7) + "...";
-		}
-		x.domain([0, d3.max(wordCount, function(d) { return d.value; })]);
-		y.domain(wordCount.map(function(d) { return cutword(d.key); }));
-		
-		var g = wordcountbar.append("g")
-	    .attr("transform", "translate(" + 70 + "," + -25 + ")");
-		
-		g.append("g")
-		.attr("class", "axis axis--y")
-		.call(d3.axisLeft(y).ticks(10))
-		.append("text")
-		.attr("transform", "rotate(90)")
+		var setup = function(targetID){
+			//Set size of svg element and chart
+			var wcmargin = {top: 5, right: 10, bottom: 5, left: 10},
+			wcbar_width = 625 - wcmargin.left - wcmargin.right,
+			wcbar_height = 200 - wcmargin.top - wcmargin.bottom,
+			wccategoryIndent = 60,
+			wcdefaultBarWidth = 625;
 			
-		g.append("g")
-		.attr("class", "axis axis--x")
-		.attr("transform", "translate(0," + (wordcountbar_height + 6) + ")")
-		.call(d3.axisBottom(x))
-		.attr("font-size", "10px");
+			//Set up scales
+			var wcbar_x = d3.scale.linear().domain([0,wcdefaultBarWidth]).range([0,wcbar_width]);
+			var wcbar_y = d3.scale.ordinal().rangeRoundBands([0, wcbar_height], 0.2, 0);
+			
+			//Create SVG element
+			var wordcountbar = d3.select(targetID).append("svg")
+			.attr("width", wcbar_width + wcmargin.left + wcmargin.right)
+			.attr("height", wcbar_height + wcmargin.top + wcmargin.bottom)
+			.append("g")
+			.attr("transform", "translate(" + wcmargin.left + "," + wcmargin.top + ")");
+			
+			//Package and export settings
+			var settings = {
+				wcmargin: wcmargin, wcbar_width: wcbar_width, 
+				wcbar_height: wcbar_height, wccategoryIndent: wccategoryIndent,
+				wordcountbar: wordcountbar, wcbar_x: wcbar_x, wcbar_y: wcbar_y
+			}
+			return settings;
+		}
+
+		var redraw_wordcountbar = function(targetID, newdata) {
+			//Import settings
+			var wcmargin = settings.wcmargin, 
+			wcbar_width = settings.wcbar_width, 
+			wcbar_height = settings.wcbar_height,
+			wccategoryIndent = settings.wccategoryIndent, 
+			wordcountbar = settings.wordcountbar, 
+			wcbar_x = settings.wcbar_x, 
+			wcbar_y = settings.wcbar_y;
+			
+			//Reset domains
+			wcbar_y.domain(newdata.sort(function(a, b){
+				return b.value - a.value;
+			})
+			.map(function(d) { return d.key; }));
+			
+			var wcbar_max = d3.max(newdata, function(e) {
+				return e.value;
+			});
+			wcbar_x.domain([0, wcbar_max]);
+
+			// Enter Process                     //
+			///////////////////////////////////////
+
+			//Create chart row and move to below the bottom of the chart
+			var chartRow = wordcountbar.selectAll("g.chartRow")
+			.data(newdata, function(d){ return d.key});
+			
+			var newRow = chartRow
+			.enter().append("g")
+			.attr("class", "chartRow")
+			.attr("transform", "translate(0," + wcbar_height + wcmargin.top + wcmargin.bottom + ")");
+
+			//Add rectangles
+			newRow.insert("rect")
+			.attr("class", "bar")
+			.attr("x", 0)
+			.attr("opacity",0.5)
+			.style("fill", function(d, i) {
+				return fill(i);
+			})
+			.attr("height", wcbar_y.rangeBand())
+			.attr("width", function(d) { return wcbar_x(d.value);}) 
+
+			//Add value labels
+			newRow.append("text")
+			.attr("class", "label")
+			.attr("y", wcbar_y.rangeBand()/2)
+			.attr("x",0)
+			.attr("opacity",1)
+			.attr("font-size", "14px")
+			.attr("font-family", "Verdana")
+			.attr("dy",".3em")
+			.attr("dx",".5em")
+			.style("fill", "#777")
+			.text(function(d) { return d.value; }); 
+	
+			//Add Headlines
+			newRow.append("text")
+			.attr("class", "category")
+			.attr("text-overflow","ellipsis")
+			.attr("y", wcbar_y.rangeBand()/2)
+			.attr("x", wccategoryIndent)
+			.attr("opacity",1)
+			.attr("font-size", "14px")
+			.attr("font-family", "Verdana")
+			.attr("dy",".3em")
+			.attr("dx",".5em")
+			.style("fill", "#777")
+			.text(function(d) {return d.key});
+
+			// Update Process                    //
+			///////////////////////////////////////
+	
+			//Update bar widths
+			chartRow.select(".bar").transition()
+			.duration(300)
+			.attr("width", function(d) { return wcbar_x(d.value);})
+			.attr("opacity", 0.5)
+			.style("fill", function(d, i) {
+				return fill(i);
+			});
+
+			//Update data labels
+			chartRow.select(".label").transition()
+			.duration(300)
+			.attr("opacity", 1)
+			.tween("text", function(d) { 
+				var i = d3.interpolate( +this.textContent.replace(/\,/g,''), + d.value);
+				return function(t) {
+					this.textContent = Math.round(i(t));
+				};
+			});
+
+			//Fade in categories
+			chartRow.select(".category").transition()
+			.duration(300)
+			.attr("opacity", 1);
+
+			// Exit Process                      //
+			///////////////////////////////////////
+
+			//Fade out and remove exit elements
+			chartRow.exit().transition()
+			.style("opacity","0")
+			.attr("transform", "translate(0," + (wcbar_height + wcmargin.top + wcmargin.bottom) + ")")
+			.remove();
+
+			// Reorder Process                      //
+			///////////////////////////////////////
+			var delay = function(d, i) { return 200 + i * 30; };
+			chartRow.transition()
+			.delay(delay)
+			.duration(900)
+			.attr("transform", function(d) { return "translate(0," + wcbar_y(d.key) + ")"; });
+		};
+
+		//Pulls data
+		//Since our data is fake, adds some random changes to simulate a data stream.
+		//Uses a callback because d3.json loading is asynchronous
+		var pullData = function(settings, callback){
+			var newData = wordCount;
+			newData.forEach(function(d,i){
+				var newValue = d.value + Math.floor((Math.random()*100) - 5)
+				d.value = newValue <= 0 ? 10 : newValue
+			})
+			newData = formatData(newData);
+			callback(settings, newData);
+		};
+
+		//Sort data in descending order and take the top 10 values
+		var formatData = function(data){
+			return data.sort(function (a, b) {
+				return b.value - a.value;
+			})
+			.slice(0, 10);
+		}
 		
-		g.selectAll(".bar")
-		.data(wordCount)
-		.enter().append("rect")
-		.attr("class", "bar")
-		.attr("x", function(d) { return 0; })
-		.attr("y", function(d) { return y(cutword(d.key)); })
-		.attr("width", function(d) { return x(d.value); })
-		.attr("height", y.bandwidth());	
+		var redraw = function(settings){
+			pullData(settings, redraw_wordcountbar)
+		}
+
+		var settings = setup("#WordCountBar");
+		redraw(settings);
+		
+		//Repeat every 20 seconds
+		setInterval(function(){redraw(settings)}, 3000);
 	});
 	</script>
 </body>
