@@ -6,7 +6,7 @@
 #MainContainer {
 	width: 100%;
 	margin: 0 auto;
-	background: #EEE;
+	background: #AAA;
 	position: relative;
 }
 
@@ -54,6 +54,35 @@
 	background: #FFF;
 }
 
+/* Network CSS */
+#Network {
+	margin: 1px;
+	background: #FFF;
+}
+
+.links line {
+  stroke: #999;
+  stroke-opacity: 0.6;
+}
+
+.nodes circle {
+  stroke: #fff;
+  stroke-width: 1.5px;
+}
+
+/* RawText CSS */
+#RawText {
+	margin: 1px;
+	background: #FFF;
+	overflow-y: auto;
+	background-color: #EEE;
+	border: 1px solid #FFF;
+	border-radius: 4px;
+	box-shadow: inset 1px 1px 10px 2px rgba(0, 128, 128, .25);
+}
+
+/* Other CSS */
+
 .states {
 	fill: teal;
 	fill-opacity: 0.7;
@@ -91,6 +120,7 @@ div.tooltip {
 }
 
 /* WordCountBar CSS */
+
 .bar {
   fill: teal;
 }
@@ -121,7 +151,7 @@ div.tooltip {
 
 .wordcountbar_axis_y path{
   stroke: teal;
-}  
+}
 
 </style>
 
@@ -132,6 +162,7 @@ div.tooltip {
 	<script src="//d3js.org/d3.v3.js"></script>
 	<script src="//d3js.org/d3.v4.js"></script>
 	<script src="//d3js.org/topojson.v1.min.js"></script>
+	<script src="//npmcdn.com/babel-core@5.8.34/browser.min.js"></script>
 	<script src="d3.layout.cloud.js"></script>
 	
 	<!-- Global Layout-->
@@ -146,6 +177,8 @@ div.tooltip {
 		<div id="RightContainer">
 			<div id="WordCloud"></div>
 			<div id="WordCountBar"></div>
+			<div id="Network"></div>
+			<div id="RawText"></div>
 		</div>
 	</div>
 	
@@ -154,6 +187,7 @@ div.tooltip {
 	/////////////////////////////////////////////////////////////////////////// 
 	//                         GeoGraph Visualization                        //
 	///////////////////////////////////////////////////////////////////////////
+	
 	var geo_width = 750, geo_height = 450;
 
 	var projection = d3.geo.albersUsa()
@@ -728,5 +762,101 @@ div.tooltip {
 		//Repeat every 20 seconds
 		setInterval(function(){redraw(settings)}, 3000);
 	});
+
+	/////////////////////////////////////////////////////////////////////////// 
+	//                          Network Visualization                        //
+	///////////////////////////////////////////////////////////////////////////		
+	var network_width = 630, network_height = 190;
+	
+	var svg = d3.select("#Network").append("svg")
+	.attr("width", network_width)
+	.attr("height", network_height);
+	
+	var color = d3.scaleOrdinal(d3.schemeCategory20);
+	
+	var simulation = d3.forceSimulation()
+	.force("link", d3.forceLink().id(function(d) { return d.id; }))
+	.force("charge", d3.forceManyBody())
+    .force("center", d3.forceCenter( network_width / 2, network_height / 2))
+//	.force('x', d3.forceX())
+    .force('y', d3.forceY());
+	
+	d3.json("network.json", function(error, graph) {
+		if (error) throw error;
+		
+		var link = svg.append("g")
+		.attr("class", "links")
+		.selectAll("line")
+		.data(graph.links)
+		.enter().append("line")
+		.attr("stroke-width", function(d) { return Math.sqrt(d.value); });
+		
+		var node = svg.append("g")
+		.attr("class", "nodes")
+		.selectAll("circle")
+		.data(graph.nodes)
+		.enter().append("circle")
+		.attr("r", 5)
+		.attr("fill", function(d) { return color(d.group); })
+		.call(d3.drag()
+		.on("start", dragstarted)
+		.on("drag", dragged)
+		.on("end", dragended));
+		
+		node.append("title").text(function(d) { return d.id; });
+		
+		simulation.nodes(graph.nodes).on("tick", ticked);
+		simulation.force("link").links(graph.links);
+		
+		function ticked() {
+			link
+			.attr("x1", function(d) { return d.source.x; })
+			.attr("y1", function(d) { return d.source.y; })
+			.attr("x2", function(d) { return d.target.x; })
+			.attr("y2", function(d) { return d.target.y; });
+			
+			node
+			.attr("cx", function(d) { return d.x; })
+			.attr("cy", function(d) { return d.y; });
+		}
+	});
+	
+	function dragstarted(d) {
+		if (!d3.event.active)
+			simulation.alphaTarget(0.3).restart();
+		d.fx = d.x;
+		d.fy = d.y;
+	}
+	
+	function dragged(d) {
+		d.fx = d3.event.x;
+		d.fy = d3.event.y;
+	}
+	
+	function dragended(d) {
+		if (!d3.event.active)
+			simulation.alphaTarget(0);
+		d.fx = null;
+		d.fy = null;
+	}
+	
+	/////////////////////////////////////////////////////////////////////////// 
+	//                          RawText Visualization                        //
+	///////////////////////////////////////////////////////////////////////////		
+	var rawtext_width = 630, rawtext_height = 20;
+	
+	var rawtext = d3.select("#RawText").append("svg")
+	.attr("width", rawtext_width)
+	.attr("height", rawtext_height);
+	
+	rawtext.append("text")
+    .attr("x", 10)
+    .attr("y", rawtext_height / 2)
+	.attr("font-family", "sans-serif")
+	.attr("font-size", "16px")
+	.attr("fill", "teal")
+    .attr("dy", ".45em")
+    .text("Test");
+	
 	</script>
 </body>
