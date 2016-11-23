@@ -1,10 +1,5 @@
 <?php
-    $user = 'cs5764';
-    $password = 'cs5764';
-    $db = 'cs5764';
-    $host = 'localhost';
-    $port = 3306;
-
+    require("config.php");
     $link = mysqli_init();
     $success = mysqli_real_connect(
         $link, 
