@@ -415,7 +415,6 @@ div.tooltip {
 		timechart.select(".zoom").call(zoom.transform, d3.zoomIdentity
 			.scale(time_width / (s[1] - s[0]))
 			.translate(-s[0], 0));
-		update_map();
 	}
 
 	function zoomed() {
@@ -425,13 +424,20 @@ div.tooltip {
 		focus.select(".area").attr("d", area);
 		focus.select(".axis--x").call(xAxis);
 		context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
-		update_map();
+		//get date information and encode using base64
+		var daterange = x.domain();
+		var from_date = btoa(daterange[0]);
+		var to_date = btoa(daterange[1]);
+		update_map(from_date,to_date);
 	}
 	
 	//TODO add parameter and optimization
-	function update_map() {
+	function update_map(from_date,to_date) {
 		geograph.selectAll("path").remove();
-		d3.csv('statestweets.php', function(data) {
+		//construct uri
+		var request_uri="statestweets.php?f="+from_date+"&t="+to_date;
+		//and send request to server
+		d3.csv(request_uri, function(data) {
 		// Set the range of the input data
 		color.domain([0,1,2,3]); 
 		// Load GeoJSON data
@@ -499,7 +505,7 @@ div.tooltip {
 			}
 		});
 		
-		console.log(wordObjects);
+		//console.log(wordObjects);
 		
 		var wordCount = d3.nest()
 		.key(function(d) { return d.word; })
@@ -512,7 +518,7 @@ div.tooltip {
 		
 		wordCount = wordCount.slice(0,50)
 		
-		console.log(wordCount)
+		//console.log(wordCount)
 				
 		var fill = d3.scale.category20();
 		
