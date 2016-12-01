@@ -91,7 +91,7 @@
 }
 
 path:hover {
-	fill-opacity: 0.9;
+	fill-opacity: 1.0;
 	transition: all 0.5s;
 }
 
@@ -246,9 +246,9 @@ div.tooltip {
 				}
 			});
 		});
-
 	});
 
+	/*
 	/////////////////////////////////////////////////////////////////////////// 
 	//                       TweetCountBar Visualization                     //
 	///////////////////////////////////////////////////////////////////////////
@@ -281,12 +281,18 @@ div.tooltip {
 	.attr("width", tweetcountbar_width)
 	.attr("height", tweetcountbar_height)
 	.style("fill", "url(#linear-gradient)");
+	*/
 
 
 	/////////////////////////////////////////////////////////////////////////// 
-	//                         TimeChart Visualization                       //
+	//                     TimeChart and Map Visualization                   //
 	///////////////////////////////////////////////////////////////////////////
 	var time_width = 720, time_height = 130;
+	var map_us;
+	
+	d3.json('us.json', function (error, us) {
+		map_us = us;
+	});
 
 	var timechart = d3.select("#TimeChart").append("svg")
 	.attr("width", time_width)
@@ -429,51 +435,45 @@ div.tooltip {
 		var from_date = btoa(daterange[0]);
 		var to_date = btoa(daterange[1]);
 		update_map(from_date,to_date);
+		
 	}
-	
+			
 	//TODO add parameter and optimization
 	function update_map(from_date,to_date) {
 		geograph.selectAll("path").remove();
 		//construct uri
 		var request_uri="statestweets.php?f="+from_date+"&t="+to_date;
 		//and send request to server
-		d3.csv(request_uri, function(data) {
-		// Set the range of the input data
-		color.domain([0,1,2,3]); 
-		// Load GeoJSON data
-		d3.json('us.json', function (error, us) {
+		var state_count;
+		d3.json(request_uri, function(data) {
+			// Load GeoJSON data
 			for (var i = 0; i < data.length; i++) {
 				// Get state name from statetweets data 
 				var dataStateName = data[i].state;
 				// Get tweet number from each state  
 				var dataTweetCount = data[i].count;
 				// Find the corresponding state inside the GeoJSON
-				for (var j = 0; j < topojson.feature(us, us.objects.usStates).features.length; j++)  {
-					var jsonStateName = topojson.feature(us, us.objects.usStates).features[j].properties.STATE_ABBR;
+				for (var j = 0; j < topojson.feature(map_us, map_us.objects.usStates).features.length; j++)  {
+					var jsonStateName = topojson.feature(map_us, map_us.objects.usStates).features[j].properties.STATE_ABBR;
 					if (dataStateName == jsonStateName) {
 						// Copy the data value into the JSON
-						topojson.feature(us, us.objects.usStates).features[j].properties.count = dataTweetCount; 
+						topojson.feature(map_us, map_us.objects.usStates).features[j].properties.count = dataTweetCount; 
 						break;
 					}
 				}
 			}
-	
+				
 			// Draw with different colors
 			geograph.selectAll('.states')
-			.data(topojson.feature(us, us.objects.usStates).features)
+			.data(topojson.feature(map_us, map_us.objects.usStates).features)
 			.enter()
 			.append('path')
 			.attr('class', 'states')
 			.attr('d', path)
 			.style('fill', function(d) {
 				var count = d.properties.count;
-				if (count) {
-					return color(count);
-				} else {
-					return "teal";
-				}
+				return color(count);
 			});
-		});
 		});
 	}
 
