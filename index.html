@@ -185,22 +185,44 @@ div.tooltip {
 	
 	<script>
 	
+	var time_width = 720, time_height = 130;
+	var timechart = d3.select("#TimeChart").append("svg")
+	.attr("width", time_width)
+	.attr("height", time_height);
+	
+	var geo_width = 750, geo_height = 450;
+	var geograph = d3.select("#GeoGraph").append("svg")
+	.attr("width", geo_width)
+	.attr("height", geo_height);
+	
+	//Set size of svg element and chart
+	var wcmargin = {top: 5, right: 10, bottom: 5, left: 10},
+	wcbar_width = 625 - wcmargin.left - wcmargin.right,
+	wcbar_height = 200 - wcmargin.top - wcmargin.bottom,
+	wccategoryIndent = 60,
+	wcdefaultBarWidth = 625;
+
+	//Set up scales
+	var wcbar_x = d3.scale.linear().domain([0,wcdefaultBarWidth]).range([0,wcbar_width]);
+	var wcbar_y = d3.scale.ordinal().rangeRoundBands([0, wcbar_height], 0.2, 0);
+
+	//Create SVG element
+	var wordcountbar = d3.select("#WordCountBar").append("svg")
+	.attr("width", wcbar_width + wcmargin.left + wcmargin.right)
+	.attr("height", wcbar_height + wcmargin.top + wcmargin.bottom)
+	.append("g")
+	.attr("transform", "translate(" + wcmargin.left + "," + wcmargin.top + ")");
+	
 	/////////////////////////////////////////////////////////////////////////// 
 	//                         GeoGraph Visualization                        //
 	///////////////////////////////////////////////////////////////////////////
 	
-	var geo_width = 750, geo_height = 450;
-
 	var projection = d3.geo.albersUsa()
 	.scale(900)
 	.translate([geo_width / 2 - 20, geo_height / 2]);
 
 	var path = d3.geo.path()
 	.projection(projection);
-
-	var geograph = d3.select("#GeoGraph").append("svg")
-	.attr("width", geo_width)
-	.attr("height", geo_height);
 
 	// Create the color set
 	var color = d3.scale.linear()
@@ -247,16 +269,11 @@ div.tooltip {
 	/////////////////////////////////////////////////////////////////////////// 
 	//                     TimeChart and Map Visualization                   //
 	///////////////////////////////////////////////////////////////////////////
-	var time_width = 720, time_height = 130;
 	var map_us;
 	
 	d3.json('us.json', function (error, us) {
 		map_us = us;
 	});
-
-	var timechart = d3.select("#TimeChart").append("svg")
-	.attr("width", time_width)
-	.attr("height", time_height);
 
 	var margin = {top: 10, right: 25, bottom: 60, left: 35},
 	margin2 = {top: 90, right: 25, bottom: 20, left: 35},
@@ -560,54 +577,15 @@ div.tooltip {
 			/////////////////////////////////////////////////////////////////////////// 
 			//                      WordCountBar Visualization                       //
 			///////////////////////////////////////////////////////////////////////////
-			
-			wordCount = wordCount.slice(0,10)
-			
-			var setup = function(targetID){
-				//Set size of svg element and chart
-				var wcmargin = {top: 5, right: 10, bottom: 5, left: 10},
-				wcbar_width = 625 - wcmargin.left - wcmargin.right,
-				wcbar_height = 200 - wcmargin.top - wcmargin.bottom,
-				wccategoryIndent = 60,
-				wcdefaultBarWidth = 625;
-				
-				//Set up scales
-				var wcbar_x = d3.scale.linear().domain([0,wcdefaultBarWidth]).range([0,wcbar_width]);
-				var wcbar_y = d3.scale.ordinal().rangeRoundBands([0, wcbar_height], 0.2, 0);
-				
-				d3.select(targetID).selectAll("*").remove();
-				//Create SVG element
-				var wordcountbar = d3.select(targetID).append("svg")
-				.attr("width", wcbar_width + wcmargin.left + wcmargin.right)
-				.attr("height", wcbar_height + wcmargin.top + wcmargin.bottom)
-				.append("g")
-				.attr("transform", "translate(" + wcmargin.left + "," + wcmargin.top + ")");
-				
-				//Package and export settings
-				var settings = {
-					wcmargin: wcmargin, wcbar_width: wcbar_width, 
-					wcbar_height: wcbar_height, wccategoryIndent: wccategoryIndent,
-					wordcountbar: wordcountbar, wcbar_x: wcbar_x, wcbar_y: wcbar_y
-				}
-				return settings;
-			}
-
-			var redraw_wordcountbar = function(targetID, newdata) {
-				//Import settings
-				var wcmargin = settings.wcmargin, 
-				wcbar_width = settings.wcbar_width, 
-				wcbar_height = settings.wcbar_height,
-				wccategoryIndent = settings.wccategoryIndent, 
-				wordcountbar = settings.wordcountbar, 
-				wcbar_x = settings.wcbar_x, 
-				wcbar_y = settings.wcbar_y;
-				
+			wordCount = wordCount.slice(0,10);
+						
+			var redraw_wordcountbar = function(newdata) {
 				//Reset domains
 				wcbar_y.domain(newdata.sort(function(a, b){
 					return b.value - a.value;
 				})
 				.map(function(d) { return d.key; }));
-				
+			
 				var wcbar_max = d3.max(newdata, function(e) {
 					return e.value;
 				});
@@ -619,7 +597,7 @@ div.tooltip {
 				//Create chart row and move to below the bottom of the chart
 				var chartRow = wordcountbar.selectAll("g.chartRow")
 				.data(newdata, function(d){ return d.key});
-				
+			
 				var newRow = chartRow
 				.enter().append("g")
 				.attr("class", "chartRow")
@@ -630,8 +608,8 @@ div.tooltip {
 				.attr("class", "bar")
 				.attr("x", 0)
 				.attr("opacity",0.5)
-				.style("fill", function(d, i) {
-					return fill(i);
+				.style("fill", function(d) {
+					return d3.hsl(d.value, 100, 100);
 				})
 				.attr("height", wcbar_y.rangeBand())
 				.attr("width", function(d) { return wcbar_x(d.value);}) 
@@ -648,7 +626,7 @@ div.tooltip {
 				.attr("dx",".5em")
 				.style("fill", "#777")
 				.text(function(d) { return d.value; }); 
-		
+	
 				//Add Headlines
 				newRow.append("text")
 				.attr("class", "category")
@@ -665,30 +643,33 @@ div.tooltip {
 
 				// Update Process                    //
 				///////////////////////////////////////
-		
+	
 				//Update bar widths
 				chartRow.select(".bar").transition()
 				.duration(300)
 				.attr("width", function(d) { return wcbar_x(d.value);})
 				.attr("opacity", 0.5)
-				.style("fill", function(d, i) {
-					return fill(i);
+				.style("fill", function(d) {
+					return d3.hsl(d.value, 100, 100);
 				});
 
 				//Update data labels
 				chartRow.select(".label").transition()
 				.duration(300)
 				.attr("opacity", 1)
+				.text(function(d) {return d.value});
+				/*		
 				.tween("text", function(d) { 
-					var i = d3.interpolate( +this.textContent.replace(/\,/g,''), + d.value);
+					var i = d3.interpolate( + this.textContent.replace(/\,/g,''), + d.value);
 					return function(t) {
 						this.textContent = Math.round(i(t));
 					};
 				});
-
+				*/
 				//Fade in categories
 				chartRow.select(".category").transition()
 				.duration(300)
+				.text(function(d) {return d.key})
 				.attr("opacity", 1);
 
 				// Exit Process                      //
@@ -707,19 +688,24 @@ div.tooltip {
 				.delay(delay)
 				.duration(900)
 				.attr("transform", function(d) { return "translate(0," + wcbar_y(d.key) + ")"; });
+				
+				wordcountbar
+				.transition()
+				.duration(600)
+                .style("fill-opacity", 1);
+				
+				wordcountbar
+				.exit()
+				.transition()
+				.duration(600)
+                .style("fill-opacity", 0)
+				.remove();
 			};
 
-			//Pulls data
-			//Since our data is fake, adds some random changes to simulate a data stream.
-			//Uses a callback because d3.json loading is asynchronous
-			var pullData = function(settings, callback){
+			var pullData = function(callback){
 				var newData = wordCount;
-				newData.forEach(function(d,i){
-					var newValue = d.value + Math.floor((Math.random()*100) - 5)
-					d.value = newValue <= 0 ? 10 : newValue
-				})
 				newData = formatData(newData);
-				callback(settings, newData);
+				callback(newData);
 			};
 
 			//Sort data in descending order and take the top 10 values
@@ -729,16 +715,14 @@ div.tooltip {
 				})
 				.slice(0, 10);
 			}
-			
-			var redraw = function(settings){
-				pullData(settings, redraw_wordcountbar)
+		
+		
+			var redraw = function(){
+				pullData(redraw_wordcountbar)
 			}
-
-			var settings = setup("#WordCountBar");
-			redraw(settings);
-			
-			//Repeat every 20 seconds
-			setInterval(function(){redraw(settings)}, 3000);
+	
+			pullData(redraw_wordcountbar);
+			redraw();
 		});
 	}
 	/////////////////////////////////////////////////////////////////////////// 
