@@ -195,6 +195,13 @@ div.tooltip {
 	.attr("width", geo_width)
 	.attr("height", geo_height);
 	
+	var wordcloud_width = 630, wordcloud_height = 150;
+	var wordcloud = d3.select("#WordCloud").append("svg")
+	.attr("width", wordcloud_width)
+	.attr("height", wordcloud_height)
+	.append("g")
+	.attr("transform", "translate(" + (wordcloud_width / 2) + "," + (wordcloud_height / 2) + ")")
+	
 	//Set size of svg element and chart
 	var wcmargin = {top: 5, right: 10, bottom: 5, left: 10},
 	wcbar_width = 625 - wcmargin.left - wcmargin.right,
@@ -508,16 +515,6 @@ div.tooltip {
 					
 			var fill = d3.scale.category20();
 			
-			var wordcloud_width = 630, wordcloud_height = 150;
-
-			d3.select("#WordCloud").selectAll("*").remove();
-
-			var wordcloud = d3.select("#WordCloud").append("svg")
-			.attr("width", wordcloud_width)
-			.attr("height", wordcloud_height)
-			.append("g")
-			.attr("transform", "translate(" + (wordcloud_width / 2) + "," + (wordcloud_height / 2) + ")")
-			
 			var fontScale = d3.scale.linear().range([10, 60]);
 			fontScale.domain([
 				d3.min(wordCount, function(d) {
@@ -572,6 +569,13 @@ div.tooltip {
 					return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
 				})
 				.style("fill-opacity", 1);
+				
+				selectVis.exit()
+				.transition()
+				.duration(600)
+				.style("font-size", 1)
+                .style("fill-opacity", 0)
+				.remove();
 			}
 			
 			/////////////////////////////////////////////////////////////////////////// 
