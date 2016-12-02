@@ -1,4 +1,7 @@
 <?php
+    $from_date = date("Y-m-d H:i:s", strtotime(base64_decode($_GET['f'])));
+    $to_date = date("Y-m-d H:i:s", strtotime(base64_decode($_GET['t'])));
+
     require("config.php");
     $link = mysqli_init();
     $success = mysqli_real_connect(
@@ -11,8 +14,13 @@
     );
     mysqli_set_charset($link,"utf8");
 
-    $query = "SELECT text FROM tweet_vis";
+    $query = "SELECT text FROM tweet_vis
+        WHERE created_time BETWEEN '$from_date' AND '$to_date'";
 
+    if (empty($_GET['f']))
+    {
+        $query = "SELECT text FROM tweet_vis";
+    }
     $result = mysqli_query($link, $query);
 
     $data = array();
