@@ -1,4 +1,7 @@
 <?php
+	$from_date = date("Y-m-d H:i:s", strtotime(base64_decode($_GET['f'])));
+	$to_date = date("Y-m-d H:i:s", strtotime(base64_decode($_GET['t'])));
+
     require("config.php");
 
     $link = mysqli_init();
@@ -14,6 +17,24 @@
 	$query = "SELECT A.screen_name as source, B.mention_name as target, B.v as value FROM
 		(SELECT ID, screen_name, count(*) AS v
 		FROM tweet_vis
+		WHERE mention_name <> '' and created_time BETWEEN '$from_date' AND '$to_date'
+		GROUP BY screen_name
+		ORDER BY v DESC
+		LIMIT 8) A 
+		JOIN
+		(SELECT ID, screen_name, mention_name, count(*) AS v
+		FROM tweet_vis 
+		WHERE mention_name <> '' AND mention_name <> 'xunyou_flood' AND screen_name <> mention_name
+		GROUP BY screen_name, mention_name
+		ORDER BY v DESC) B 
+		ON A.screen_name = B.screen_name
+        ORDER BY A.screen_name";
+
+	if (empty($_GET['f']))
+	{
+		$query = "SELECT A.screen_name as source, B.mention_name as target, B.v as value FROM
+		(SELECT ID, screen_name, count(*) AS v
+		FROM tweet_vis
 		WHERE mention_name <> ''
 		GROUP BY screen_name
 		ORDER BY v DESC
@@ -26,7 +47,9 @@
 		ORDER BY v DESC) B 
 		ON A.screen_name = B.screen_name
         ORDER BY A.screen_name";
-		
+
+	}
+
 	$result = mysqli_query($link, $query);
 	
 	$data = array();

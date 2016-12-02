@@ -284,7 +284,8 @@ div.tooltip {
 	.scaleExtent([1, 50])
 	.translateExtent([[0, 0], [time_width, time_height]])
 	.extent([[0, 0], [time_width, time_height]])
-	.on("zoom", zoomed);
+	.on("zoom", zoomed)
+	.on("end", zoomEnd);
 
 	var area = d3.area()
 	.curve(d3.curveMonotoneX)
@@ -390,11 +391,19 @@ div.tooltip {
 		focus.select(".area").attr("d", area);
 		focus.select(".axis--x").call(xAxis);
 		context.select(".brush").call(brush.move, x.range().map(t.invertX, t));
+	}
+
+	function zoomEnd()
+	{
+		console.log(d3.event.sourceEvent);
+		if (d3.event.sourceEvent
+			&& (d3.event.sourceEvent.type != "end")) return;
 		//get date information and encode using base64
 		var daterange = x.domain();
 		var from_date = btoa(daterange[0]);
 		var to_date = btoa(daterange[1]);
 		update_map(from_date,to_date);
+		update_network(from_date,to_date);
 		update_word_cloud(from_date,to_date);
 	}
 	
@@ -737,11 +746,7 @@ div.tooltip {
 	//                          Network Visualization                        //
 	///////////////////////////////////////////////////////////////////////////		
 	var network_width = 630, network_height = 190;
-	
-	var svg = d3.select("#Network").append("svg")
-	.attr("width", network_width)
-	.attr("height", network_height);
-	
+		
 	var color = d3.scaleOrdinal(d3.schemeCategory20);
 	
 	var simulation = d3.forceSimulation()
@@ -750,66 +755,78 @@ div.tooltip {
     .force("center", d3.forceCenter( network_width / 2, network_height / 2))
 //	.force('x', d3.forceX())
     .force('y', d3.forceY());
-	
-	d3.json("network.json", function(error, graph) {
-		if (error) throw error;
-		
-		var link = svg.append("g")
-		.attr("class", "links")
-		.selectAll("line")
-		.data(graph.links)
-		.enter().append("line")
-		.attr("stroke-width", function(d) { return Math.sqrt(d.value); });
-		
-		var node = svg.append("g")
-		.attr("class", "nodes")
-		.selectAll("circle")
-		.data(graph.nodes)
-		.enter().append("circle")
-		.attr("r", 5)
-		.attr("fill", function(d) { return color(d.group); })
-		.call(d3.drag()
-		.on("start", dragstarted)
-		.on("drag", dragged)
-		.on("end", dragended));
-		
-		node.append("title").text(function(d) { return d.id; });
-		
-		simulation.nodes(graph.nodes).on("tick", ticked);
-		simulation.force("link").links(graph.links);
-		
-		function ticked() {
-			link
-			.attr("x1", function(d) { return d.source.x; })
-			.attr("y1", function(d) { return d.source.y; })
-			.attr("x2", function(d) { return d.target.x; })
-			.attr("y2", function(d) { return d.target.y; });
+
+	update_network("","");
+
+	function update_network(from_date,to_date)
+	{
+		//var request_uri="db_network.php?f="+from_date+"&t="+to_date;
+		var request_uri="network.json";
+		d3.json(request_uri, function(error, graph) {
+			if (error) throw error;
+
+			d3.select("#Network").selectAll("*").remove();
+			var svg = d3.select("#Network").append("svg")
+				.attr("width", network_width)
+				.attr("height", network_height);
+
+			var link = svg.append("g")
+			.attr("class", "links")
+			.selectAll("line")
+			.data(graph.links)
+			.enter().append("line")
+			.attr("stroke-width", function(d) { return Math.sqrt(d.value); });
 			
-			node
-			.attr("cx", function(d) { return d.x; })
-			.attr("cy", function(d) { return d.y; });
+			var node = svg.append("g")
+			.attr("class", "nodes")
+			.selectAll("circle")
+			.data(graph.nodes)
+			.enter().append("circle")
+			.attr("r", 5)
+			.attr("fill", function(d) { return color(d.group); })
+			.call(d3.drag()
+			.on("start", dragstarted)
+			.on("drag", dragged)
+			.on("end", dragended));
+			
+			node.append("title").text(function(d) { return d.id; });
+			
+			simulation.nodes(graph.nodes).on("tick", ticked);
+			simulation.force("link").links(graph.links);
+			
+			function ticked() {
+				link
+				.attr("x1", function(d) { return d.source.x; })
+				.attr("y1", function(d) { return d.source.y; })
+				.attr("x2", function(d) { return d.target.x; })
+				.attr("y2", function(d) { return d.target.y; });
+				
+				node
+				.attr("cx", function(d) { return d.x; })
+				.attr("cy", function(d) { return d.y; });
+			}
+			simulation.restart();
+		});
+		
+		function dragstarted(d) {
+			if (!d3.event.active)
+				simulation.alphaTarget(0.3).restart();
+			d.fx = d.x;
+			d.fy = d.y;
 		}
-	});
-	
-	function dragstarted(d) {
-		if (!d3.event.active)
-			simulation.alphaTarget(0.3).restart();
-		d.fx = d.x;
-		d.fy = d.y;
+		
+		function dragged(d) {
+			d.fx = d3.event.x;
+			d.fy = d3.event.y;
+		}
+		
+		function dragended(d) {
+			if (!d3.event.active)
+				simulation.alphaTarget(0);
+			d.fx = null;
+			d.fy = null;
+		}
 	}
-	
-	function dragged(d) {
-		d.fx = d3.event.x;
-		d.fy = d3.event.y;
-	}
-	
-	function dragended(d) {
-		if (!d3.event.active)
-			simulation.alphaTarget(0);
-		d.fx = null;
-		d.fy = null;
-	}
-	
 	/////////////////////////////////////////////////////////////////////////// 
 	//                          RawText Visualization                        //
 	///////////////////////////////////////////////////////////////////////////		
