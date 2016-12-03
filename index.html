@@ -539,9 +539,13 @@ div.tooltip {
 			.start();
 			
 			function draw(words) {
+				//wordcloud.selectAll("text").remove();
+
+				//remove path data in svg that doesn't exist in new data set
+
 				var selectVis = wordcloud.selectAll("text")
-				.data(words);
-				
+								.data(words);
+
 				selectVis
 				.enter().append("text")
 				.style("font-size", function(d) {
@@ -555,6 +559,7 @@ div.tooltip {
 				.attr("transform", function(d) {
 					return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
 				})
+				.merge(selectVis)
 				.text(function(d) {
 					return d.key;
 				})
@@ -574,7 +579,7 @@ div.tooltip {
 				.transition()
 				.duration(600)
 				.style("font-size", 1)
-                .style("fill-opacity", 0)
+				.style("fill-opacity", 1e-6)
 				.remove();
 			}
 			
@@ -582,7 +587,7 @@ div.tooltip {
 			//                      WordCountBar Visualization                       //
 			///////////////////////////////////////////////////////////////////////////
 			wordCount = wordCount.slice(0,10);
-						
+			
 			var redraw_wordcountbar = function(newdata) {
 				//Reset domains
 				wcbar_y.domain(newdata.sort(function(a, b){
@@ -600,7 +605,7 @@ div.tooltip {
 
 				//Create chart row and move to below the bottom of the chart
 				var chartRow = wordcountbar.selectAll("g.chartRow")
-				.data(newdata, function(d){ return d.key});
+				.data(newdata, function(d){return d.key});
 			
 				var newRow = chartRow
 				.enter().append("g")
@@ -661,7 +666,7 @@ div.tooltip {
 				chartRow.select(".label").transition()
 				.duration(300)
 				.attr("opacity", 1)
-				.text(function(d) {return d.value});
+				.text(function(d) { return d.value});
 				/*		
 				.tween("text", function(d) { 
 					var i = d3.interpolate( + this.textContent.replace(/\,/g,''), + d.value);
@@ -724,7 +729,6 @@ div.tooltip {
 			var redraw = function(){
 				pullData(redraw_wordcountbar)
 			}
-	
 			pullData(redraw_wordcountbar);
 			redraw();
 		});
