@@ -509,11 +509,9 @@ div.tooltip {
 				return b.value - a.value;
 			});
 			
-			wordCount = wordCount.slice(0,50)
+			wordCount = wordCount.slice(0,40)
 			
 			//console.log(wordCount)
-					
-			var fill = d3.scale.category20();
 			
 			var fontScale = d3.scale.linear().range([10, 60]);
 			fontScale.domain([
@@ -539,6 +537,8 @@ div.tooltip {
 			.start();
 			
 			function draw(words) {
+				var fill = d3.scaleOrdinal(d3.schemeCategory20);
+			
 				//wordcloud.selectAll("text").remove();
 
 				//remove path data in svg that doesn't exist in new data set
@@ -552,8 +552,8 @@ div.tooltip {
 					return fontScale(d.value)
 				})
 				.style("font-family", "Impact")
-				.style("fill", function(d, i) {
-					return fill(i);
+				.style("fill", function(d) {
+					return fill(d.key);
 				})
 				.attr("text-anchor", "middle")
 				.attr("transform", function(d) {
@@ -589,6 +589,7 @@ div.tooltip {
 			wordCount = wordCount.slice(0,10);
 			
 			var redraw_wordcountbar = function(newdata) {
+				var fill = d3.scaleOrdinal(d3.schemeCategory20);
 				//Reset domains
 				wcbar_y.domain(newdata.sort(function(a, b){
 					return b.value - a.value;
@@ -617,11 +618,8 @@ div.tooltip {
 				.attr("class", "bar")
 				.attr("x", 0)
 				.attr("opacity",0.5)
-				.style("fill", function(d) {
-					return d3.hsl(d.value, 100, 100);
-				})
 				.attr("height", wcbar_y.rangeBand())
-				.attr("width", function(d) { return wcbar_x(d.value);}) 
+				.attr("width", function(d) { return wcbar_x(d.value);});
 
 				//Add value labels
 				newRow.append("text")
@@ -659,7 +657,7 @@ div.tooltip {
 				.attr("width", function(d) { return wcbar_x(d.value);})
 				.attr("opacity", 0.5)
 				.style("fill", function(d) {
-					return d3.hsl(d.value, 100, 100);
+					return fill(d.key);
 				});
 
 				//Update data labels
@@ -724,8 +722,7 @@ div.tooltip {
 				})
 				.slice(0, 10);
 			}
-		
-		
+
 			var redraw = function(){
 				pullData(redraw_wordcountbar)
 			}
