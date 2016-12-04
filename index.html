@@ -252,9 +252,6 @@ div.tooltip {
 	var path = d3.geo.path()
 	.projection(projection);
 
-	// Create the color set
-	var color = d3.scale.linear()
-	.range(['teal','rgb(69,60,100)','rgb(84,36,55)','rgb(157,31,37)']);
 
 	update_map("","");
 
@@ -452,12 +449,36 @@ div.tooltip {
 //		update_raw_display(from_date, to_date);
 	}
 	
+	var map_color_set = d3.scaleOrdinal()
+		.range([d3.rgb(230,240,247),
+				d3.rgb(222,235,247),
+				d3.rgb(198,219,239),
+				d3.rgb(158,202,225),
+				d3.rgb(107,174,214),
+				d3.rgb(66,146,198),
+				d3.rgb(33,113,181),
+				d3.rgb(8,81,156),
+				d3.rgb(8,48,107)]);
+
 	function update_map(from_date,to_date) {
 		//construct uri
 		var request_uri="statestweets.php?f="+from_date+"&t="+to_date;
 		//and send request to server
 		var state_count;
+
 		d3.json(request_uri, function(data) {
+			function getDomain(data)
+			{
+				var dom = [];
+				for (var i=0;i<data.length;i++)
+				{
+					dom.push(data[i].count);
+				}
+				dom.sort();
+				return dom;
+			}
+			map_color_set.domain(getDomain(data));
+
 			// Load GeoJSON data
 			geograph.selectAll("path").remove();
 			for (var i = 0; i < data.length; i++) {
@@ -475,7 +496,6 @@ div.tooltip {
 					}
 				}
 			}
-				
 			// Draw with different colors
 			geograph.selectAll('.states')
 			.data(topojson.feature(map_us, map_us.objects.usStates).features)
@@ -485,7 +505,7 @@ div.tooltip {
 			.attr('d', path)
 			.style('fill', function(d) {
 				var count = d.properties.count;
-				return color(count);
+				return map_color_set(count);
 			});
 		});
 	}
@@ -755,12 +775,11 @@ div.tooltip {
 	/////////////////////////////////////////////////////////////////////////// 
 	//                          Network Visualization                        //
 	///////////////////////////////////////////////////////////////////////////
-	var color = d3.scaleOrdinal(d3.schemeCategory20);
-				
 	update_network("","");
 
 	function update_network(from_date,to_date)
 	{		
+		var color = d3.scaleOrdinal(d3.schemeCategory20);
 		var request_uri="db_network.php?f="+from_date+"&t="+to_date;
 		d3.json(request_uri, function(error, links) {
 			
