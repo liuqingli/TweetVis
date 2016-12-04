@@ -449,7 +449,7 @@ div.tooltip {
 //		update_raw_display(from_date, to_date);
 	}
 	
-	var map_color_set = d3.scaleOrdinal()
+	var map_color_set = d3.scaleQuantile()
 		.range([d3.rgb(230,240,247),
 				d3.rgb(222,235,247),
 				d3.rgb(198,219,239),
@@ -506,7 +506,10 @@ div.tooltip {
 			.style('fill', function(d) {
 				var count = d.properties.count;
 				return map_color_set(count);
-			});
+			})
+			.attr('d', path)
+			.append("title")
+				.text(function(d){return d.properties.count;});
 		});
 	}
 
