@@ -95,11 +95,6 @@
 #RawText {
 	margin: 1px;
 	background: #FFF;
-	overflow-y: auto;
-	background-color: #EEE;
-	border: 1px solid #FFF;
-	border-radius: 4px;
-	box-shadow: inset 1px 1px 10px 2px rgba(0, 128, 128, .25);
 }
 
 /* Other CSS */
@@ -200,7 +195,8 @@ div.tooltip {
 			<div id="WordCloud"></div>
 			<div id="WordCountBar"></div>
 			<div id="Network"></div>
-			<div id="RawText"></div>
+			<div id="RawText">
+			</div>
 		</div>
 	</div>
 	
@@ -446,7 +442,7 @@ div.tooltip {
 		update_map(from_date,to_date);
 		update_network(from_date,to_date);
 		update_word_cloud(from_date,to_date);
-//		update_raw_display(from_date, to_date);
+		update_raw_display(from_date, to_date);
 	}
 	
 	var map_color_set = d3.scaleQuantile()
@@ -938,21 +934,51 @@ div.tooltip {
 	}
 	/////////////////////////////////////////////////////////////////////////// 
 	//                          RawText Visualization                        //
-	///////////////////////////////////////////////////////////////////////////		
+	///////////////////////////////////////////////////////////////////////////
+		
 	var rawtext_width = 630, rawtext_height = 20;
-	
+
 	var rawtext = d3.select("#RawText").append("svg")
 	.attr("width", rawtext_width)
 	.attr("height", rawtext_height);
 	
-	rawtext.append("text")
-    .attr("x", 10)
-    .attr("y", rawtext_height / 2)
-	.attr("font-family", "sans-serif")
-	.attr("font-size", "16px")
-	.attr("fill", "teal")
-    .attr("dy", ".45em")
-    .text("Test");
+	var g = rawtext.append("g").attr("transform", "translate(10," + (rawtext_height / 2) + ")");
+				
+	update_raw_display("", "");
+		
+	function update_raw_display(from_date, to_date) {
+		
+		var request_uri = "db_gettext.php?f=" + from_date + "&t=" + to_date;
+		
+		d3.json(request_uri, function (data) {
+										
+			d3.interval(function() {
+				var tweet = data[getRandomInt(0, data.length)].text.replace(/[!\.,:;\?]/g, '');
+				update_rawtweet(tweet);
+			}, 5000);
+		});
+		
+		function update_rawtweet(tweet) {
+											
+			var text = g.selectAll("text").data(tweet);
+					
+			text.enter().append("text")
+			.attr("class", "g")
+			.attr("fill", "teal")
+			.attr("font-size", "12px")
+			.attr("font-family", "Verdana")
+			.attr("dy",".3em")
+			.merge(text)
+			.text(tweet);
+		
+			text.exit().remove();
+		}
 	
+		function getRandomInt(min, max) {
+			min = Math.ceil(min);
+			max = Math.floor(max);
+			return Math.floor(Math.random() * (max - min)) + min;
+		}		
+	}
 	</script>
 </body>
