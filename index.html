@@ -95,6 +95,8 @@
 #RawText {
 	margin: 1px;
 	background: #FFF;
+    overflow: hidden;
+    white-space: nowrap;
 }
 
 /* Other CSS */
@@ -266,17 +268,17 @@ div.tooltip {
 				
 		setInterval(function() {
 			var tweet = tweets[getRandomInt(0, tweets.length)];
-			if(tweet.length > 80) {
-				tweet = tweet.substring(0, 77) + "...";
+			if(tweet.length > 95) {
+				tweet = tweet.substring(0, 92) + "...";
 			}	
 			var div = document.getElementById("RawText");
 			div.innerHTML = tweet;
 			div.style.fontFamily = "Verdana";
 			div.style.color = "steelblue";
-			div.style.fontSize = "14px";
+			div.style.fontSize = "12px";
 			div.style.paddingLeft = "10px";
-			div.style.paddingTop = "4px";
-			div.style.paddingBottom = "3px";
+			div.style.paddingTop = "5px";
+			div.style.paddingBottom = "4px";
 			
 		}, 5000);
 		
