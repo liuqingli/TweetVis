@@ -125,7 +125,7 @@ div.tooltip {
 }
 
 .area {
-	fill: teal;
+	fill: steelblue;
 	clip-path: url(#clip);
 }
 
@@ -195,8 +195,7 @@ div.tooltip {
 			<div id="WordCloud"></div>
 			<div id="WordCountBar"></div>
 			<div id="Network"></div>
-			<div id="RawText">
-			</div>
+			<div id="RawText"></div>
 		</div>
 	</div>
 	
@@ -236,6 +235,57 @@ div.tooltip {
 	.attr("height", wcbar_height + wcmargin.top + wcmargin.bottom)
 	.append("g")
 	.attr("transform", "translate(" + wcmargin.left + "," + wcmargin.top + ")");
+	
+	var rawtext_width = 630, rawtext_height = 20;
+	
+	var rawtext = d3.select("#RawText").append("svg")
+	.attr("width", rawtext_width)
+	.attr("height", rawtext_height)
+	.append("g")
+	.attr("transform", "translate(10, 15)");
+	
+	/////////////////////////////////////////////////////////////////////////// 
+	//                          RawText Visualization                        //
+	///////////////////////////////////////////////////////////////////////////
+					
+	update_raw_display("", "");
+		
+	function update_raw_display(from_date, to_date) {
+		var div = document.getElementById("RawText");
+		div.textContent = "";
+		
+		var request_uri = "db_gettext.php?f=" + from_date + "&t=" + to_date;
+		var tweets = [];
+		
+		d3.json(request_uri, function (error, data) {
+			for (var i = 0; i < data.length; i++)
+			{
+				tweets.push(data[i].text);
+			}
+		});
+				
+		setInterval(function() {
+			var tweet = tweets[getRandomInt(0, tweets.length)];
+			if(tweet.length > 80) {
+				tweet = tweet.substring(0, 77) + "...";
+			}	
+			var div = document.getElementById("RawText");
+			div.innerHTML = tweet;
+			div.style.fontFamily = "Verdana";
+			div.style.color = "steelblue";
+			div.style.fontSize = "14px";
+			div.style.paddingLeft = "10px";
+			div.style.paddingTop = "4px";
+			div.style.paddingBottom = "3px";
+			
+		}, 5000);
+		
+		function getRandomInt(min, max) {
+			min = Math.ceil(min);
+			max = Math.floor(max);
+			return Math.floor(Math.random() * (max - min)) + min;
+		}
+	}
 	
 	/////////////////////////////////////////////////////////////////////////// 
 	//                         GeoGraph Visualization                        //
@@ -931,54 +981,6 @@ div.tooltip {
 				.attr("r", 6);
 			}
 		});
-	}
-	/////////////////////////////////////////////////////////////////////////// 
-	//                          RawText Visualization                        //
-	///////////////////////////////////////////////////////////////////////////
-		
-	var rawtext_width = 630, rawtext_height = 20;
-
-	var rawtext = d3.select("#RawText").append("svg")
-	.attr("width", rawtext_width)
-	.attr("height", rawtext_height);
-	
-	var g = rawtext.append("g").attr("transform", "translate(10," + (rawtext_height / 2) + ")");
-				
-	update_raw_display("", "");
-		
-	function update_raw_display(from_date, to_date) {
-		
-		var request_uri = "db_gettext.php?f=" + from_date + "&t=" + to_date;
-		
-		d3.json(request_uri, function (data) {
-										
-			d3.interval(function() {
-				var tweet = data[getRandomInt(0, data.length)].text.replace(/[!\.,:;\?]/g, '');
-				update_rawtweet(tweet);
-			}, 5000);
-		});
-		
-		function update_rawtweet(tweet) {
-											
-			var text = g.selectAll("text").data(tweet);
-					
-			text.enter().append("text")
-			.attr("class", "g")
-			.attr("fill", "teal")
-			.attr("font-size", "12px")
-			.attr("font-family", "Verdana")
-			.attr("dy",".3em")
-			.merge(text)
-			.text(tweet);
-		
-			text.exit().remove();
-		}
-	
-		function getRandomInt(min, max) {
-			min = Math.ceil(min);
-			max = Math.floor(max);
-			return Math.floor(Math.random() * (max - min)) + min;
-		}		
 	}
 	</script>
 </body>
