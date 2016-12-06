@@ -251,6 +251,8 @@ div.tooltip {
 	///////////////////////////////////////////////////////////////////////////
 					
 	update_raw_display("", "");
+	
+	var intervalID;
 		
 	function update_raw_display(from_date, to_date) {
 		var div = document.getElementById("RawText");
@@ -265,8 +267,11 @@ div.tooltip {
 				tweets.push(data[i].text);
 			}
 		});
-				
-		setInterval(function() {
+		
+		if(intervalID)
+			clearInterval(intervalID);
+					
+		intervalID = setInterval(function() {
 			var tweet = tweets[getRandomInt(0, tweets.length)];
 			if(tweet.length > 95) {
 				tweet = tweet.substring(0, 92) + "...";
