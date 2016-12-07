@@ -326,9 +326,6 @@ div.tooltip .tooltiptext {
 	var path = d3.geo.path()
 	.projection(projection);
 
-
-	update_map("","");
-
 	/*
 	/////////////////////////////////////////////////////////////////////////// 
 	//                       TweetCountBar Visualization                     //
@@ -372,6 +369,7 @@ div.tooltip .tooltiptext {
 	
 	d3.json('us.json', function (error, us) {
 		map_us = us;
+		update_map("","");
 	});
 
 	var margin = {top: 10, right: 25, bottom: 60, left: 35},
