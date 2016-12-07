@@ -133,10 +133,11 @@ div.tooltip .tooltiptext {
     background-color: black;
     color: #fff;
     text-align: center;
+    font: 14px Helvetica;
 }
 
 .arc text {
-  	font: 10px sans-serif;
+  	font: 12px Helvetica;
   	text-anchor: middle;
   	text-shadow: #f5f5f5 0 1px 0;
   	color: white;
@@ -536,6 +537,13 @@ div.tooltip .tooltiptext {
 				d3.rgb(41,88,176),//negative
 				d3.rgb(3,219,78)//netural
 				]);
+	var tooltip = d3.select('body').append('div')
+            .attr('class', 'hidden tooltip')
+            .html("<div>"
+					+"<div><label class='tooltiptext'>Sentiment</label></div>"
+					+"<div id='sentiment'></div>"
+					+"<div id='totalcnt'></div>"
+        		 	+"</div>");
 
 	function update_map(from_date,to_date) {
 		//construct uri
@@ -543,18 +551,19 @@ div.tooltip .tooltiptext {
 		//and send request to server
 		var state_count;
 
-		var tooltip = d3.select('body').append('div')
-            .attr('class', 'hidden tooltip');
+		//hide tooltip bar for good
+		tooltip.classed('hidden', true);
 
 		d3.json(request_uri, function(data) {
+
 			function getDomain(data)
 			{
 				var dom = [];
 				for (var i=0;i<data.length;i++)
 				{
-					dom.push(parseInt(data[i].pos)
-							+parseInt(data[i].neg)
-							+parseInt(data[i].neu));
+					dom.push((parseInt(data[i].pos)||0)
+							+(parseInt(data[i].neg)||0)
+							+(parseInt(data[i].neu)||0));
 				}
 				dom.sort();
 				return dom;
@@ -568,9 +577,9 @@ div.tooltip .tooltiptext {
 				var dataStateName = data[i].location;
 				// Get tweet number from each state  
 				var dataTweetCount
-					 = parseInt(data[i].pos)
-						+parseInt(data[i].neg)
-						+parseInt(data[i].neu);
+					 = (parseInt(data[i].pos)||0)
+						+(parseInt(data[i].neg)||0)
+						+(parseInt(data[i].neu)||0);
 				// Find the corresponding state inside the GeoJSON
 				for (var j = 0; j < topojson.feature(map_us, map_us.objects.usStates).features.length; j++)  {
 					var jsonStateName = topojson.feature(map_us, map_us.objects.usStates).features[j].properties.STATE_ABBR;
@@ -605,14 +614,15 @@ div.tooltip .tooltiptext {
                     });
                     tooltip.classed('hidden', false)
                         .attr('style', 'left:' + (mouse[0] + 15) +
-                                'px; top:' + (mouse[1] - 35) + 'px')
-                        .html("<div>"
-            	 				+"<div><label class='tooltiptext'>Sentiment</label></div>"
-        		 				+"<div id='sentiment'></div>"
-        		 				+"<div id='totalcnt'><label class='tooltiptext'>Total: "
-            	 				+d.properties.count
-            	 				+"</text></div>"
-        		 				+"</div>");
+                                'px; top:' + (mouse[1] - 35) + 'px');
+
+                    document.getElementById("totalcnt").innerHTML
+						= "<label class='tooltiptext'>Total: "
+							+d.properties.count
+							+"</text>";
+
+                    d3.select("#sentiment").selectAll("*").remove();
+
 					var sentimentsvg
                     	 = d3.select("#sentiment")
                     	 .append('svg')
@@ -650,20 +660,21 @@ div.tooltip .tooltiptext {
 						.append("g")
 						.attr("class", "arc");
 
-						sentimentg.append('path')
-						.attr('d', arc)
-						.attr('fill', function(d, i) {
-			            	return sentiment_color_set(i);
-						})
+					sentimentg.append('path')
+					.attr('d', arc)
+					.attr('fill', function(d, i) {
+		            	return sentiment_color_set(i);
+					})
 
-						sentimentg.append('text')
-						.attr("transform", function(d) {
-							return "translate(" + labelArc.centroid(d) + ")";
-						})
-						.attr("dy", ".35em")
-						.text(function(d) {
-							return d.data.count;
-						});
+					sentimentg.append('text')
+					.attr("transform", function(d) {
+						return "translate(" + labelArc.centroid(d) + ")";
+					})
+					.attr("dy", ".35em")
+					.text(function(d) {
+						return d.data.count;
+					});
+					sentimentg.exit().remove();
                 })
                 .on('mouseout', function() {
                     tooltip.classed('hidden', true);
