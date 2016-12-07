@@ -120,28 +120,25 @@ path:hover {
 }
 
 div.tooltip {
-	color: #000;
-	background-color: #000;
+	background-color: beige;
 	padding: .5em;
-	text-shadow: #f5f5f5 0 1px 0;
 	border-radius: 6px;
 	opacity: 0.9;
 	position: absolute;
 }
 
 div.tooltip .tooltiptext {
-    background-color: black;
-    color: #fff;
-    text-align: center;
-    font: 14px Helvetica;
+	display: inline-block;
+    color: steelblue;
+    font: 12px Verdana;
+  	text-align: center;
 }
 
 .arc text {
-  	font: 12px Helvetica;
+  	font: 12px Verdana;
   	text-anchor: middle;
-  	text-shadow: #f5f5f5 0 1px 0;
-  	color: white;
-  	fill: white;
+  	color: steelblue;
+  	fill: steelblue;
 }
 
 .arc path {
@@ -533,9 +530,9 @@ div.tooltip .tooltiptext {
 				d3.rgb(8,81,156),
 				d3.rgb(8,48,107)]);
 	var sentiment_color_set = d3.scaleQuantile()
-				.range([d3.rgb(255,87,51),//positive
-				d3.rgb(41,88,176),//negative
-				d3.rgb(3,219,78)//netural
+				.range(["LightPink",//positive
+				"LightGreen",//negative
+				"LightGray"//netural
 				]);
 	var tooltip = d3.select('body').append('div')
             .attr('class', 'hidden tooltip')
