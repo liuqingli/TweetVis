@@ -641,9 +641,9 @@ div.tooltip .tooltiptext {
 					sentiment_color_set.domain(color_domain);
 
 					var sentiment_data = [
-						{ label: 'positive', count: d.properties.pos},
-						{ label: 'negative', count: d.properties.neg},
-						{ label: 'netural', count: d.properties.neu}
+						{ label: '😁', count: d.properties.pos},//positive
+						{ label: '😩', count: d.properties.neg},//negative
+						{ label: '🙄', count: d.properties.neu}//netural
 						];
 
 					var labelArc = d3.svg.arc()
@@ -668,8 +668,8 @@ div.tooltip .tooltiptext {
 						return "translate(" + labelArc.centroid(d) + ")";
 					})
 					.attr("dy", ".35em")
-					.text(function(d) {
-						return d.data.count;
+					.text(function(d,i) {
+						return d.data.count+" "+d.data.label;
 					});
 					sentimentg.exit().remove();
                 })
