@@ -609,10 +609,11 @@ div.tooltip .tooltiptext {
                         .attr('style', 'left:' + (mouse[0] + 15) +
                                 'px; top:' + (mouse[1] - 35) + 'px')
                         .html("<div>"
-            	 				+"<div id='totalcnt'><label class='tooltiptext'>"
+            	 				+"<div><label class='tooltiptext'>Sentiment</label></div>"
+        		 				+"<div id='sentiment'></div>"
+        		 				+"<div id='totalcnt'><label class='tooltiptext'>Total: "
             	 				+d.properties.count
             	 				+"</text></div>"
-        		 				+"<div id='sentiment'></div>"
         		 				+"</div>");
 					var sentimentsvg
                     	 = d3.select("#sentiment")
