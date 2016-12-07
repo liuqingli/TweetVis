@@ -620,18 +620,21 @@ div.tooltip .tooltiptext {
 
                     d3.select("#sentiment").selectAll("*").remove();
 
+                    var piewidth = 200;
+                    var pieheight = 200;
+                    var radius = 100;
 					var sentimentsvg
                     	 = d3.select("#sentiment")
                     	 .append('svg')
-                    	 .attr('width',120)
-                    	 .attr('height',120)
+                    	 .attr('width',piewidth)
+                    	 .attr('height',pieheight)
                     	 .append('g')
-                    	 .attr('transform', 'translate(' + (120 / 2) + 
-								',' + (120 / 2) + ')');
+                    	 .attr('transform', 'translate(' + (piewidth / 2) + 
+								',' + (pieheight / 2) + ')');
 
 			        var arc = d3.arc()
 						.innerRadius(0)
-						.outerRadius(120/2);
+						.outerRadius(radius);
 
 			        var pie = d3.pie()
 						.value(function(d) { return d.count; })
@@ -647,8 +650,8 @@ div.tooltip .tooltiptext {
 						];
 
 					var labelArc = d3.svg.arc()
-					    .outerRadius(120/2 - 30)
-    					.innerRadius(120/2 - 30);
+					    .outerRadius(radius - 30)
+    					.innerRadius(radius - 30);
 
 			        var sentimentg
 			        	 = sentimentsvg.selectAll('path')
